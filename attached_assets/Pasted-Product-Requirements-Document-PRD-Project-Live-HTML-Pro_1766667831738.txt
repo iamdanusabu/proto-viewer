@@ -1,0 +1,364 @@
+Product Requirements Document (PRD)
+Project: Live HTML Prototype Viewer with Device Mockups
+1. Objective
+Build a web-based application that allows users to paste HTML/CSS/JS code and preview it live inside realistic device mockups, starting with iPhone Pro Max devices, while preserving full interactivity (scrolling, clicking, forms, JS behavior).
+The preview must accurately simulate device viewport size, safe areas, scroll behavior, and responsive layouts, similar to Figma’s prototype preview, but for live executable code.
+
+2. Core Use Case
+
+
+User pastes HTML-based code into the system.
+
+
+User selects a target device (initially: iPhone Pro Max).
+
+
+The system renders the code inside a full-size device mockup.
+
+
+The rendered content behaves exactly as it would in a real browser:
+
+
+Scrollable
+
+
+Clickable
+
+
+Supports JS interactions
+
+
+Supports responsive CSS
+
+
+
+
+User can visually inspect how the code behaves on that device.
+
+
+
+3. Supported Input (Phase 1)
+
+
+HTML
+
+
+CSS (inline, <style>, or linked inside the pasted HTML)
+
+
+JavaScript (inline or <script> tags)
+
+
+No backend execution required in Phase 1
+
+
+
+4. Device Support (Phase 1)
+Initial Device
+
+
+iPhone 15 Pro Max
+
+
+Viewport size must match real device dimensions
+
+
+Correct device aspect ratio
+
+
+Safe area insets (top notch / bottom home indicator)
+
+
+Scroll constrained to device screen only
+
+
+
+
+Future Devices (Not required now, but architecture must allow):
+
+
+Other iPhone models
+
+
+Android phones
+
+
+Tablets
+
+
+Desktop browsers
+
+
+
+5. Device Mockup Requirements
+
+
+Use a realistic, high-fidelity device frame (SVG or image-based)
+
+
+Screen area must be:
+
+
+Precisely masked
+
+
+Pixel-accurate to the device viewport
+
+
+
+
+The HTML content must render inside the screen only
+
+
+Outer device frame must be non-interactive
+
+
+Only the screen area allows interaction
+
+
+
+6. Rendering & Sandbox Behavior
+
+
+The pasted code must be rendered in a sandboxed environment
+
+
+Options:
+
+
+<iframe> with sandbox attributes
+
+
+Isolated execution context
+
+
+
+
+Requirements:
+
+
+No access to parent DOM
+
+
+No cross-frame leakage
+
+
+JavaScript execution allowed inside sandbox
+
+
+CSS media queries must respond to the device viewport size
+
+
+
+
+
+7. Responsiveness Simulation
+
+
+The viewport size must be locked to the selected device dimensions
+
+
+CSS media queries must behave exactly as on a real device
+
+
+Zooming must be disabled by default
+
+
+Orientation: Portrait only (Phase 1)
+
+
+
+8. Interaction Requirements
+Inside the device screen:
+
+
+Scroll (vertical)
+
+
+Click
+
+
+Tap-like behavior
+
+
+Form inputs
+
+
+JS-driven UI interactions
+
+
+Hover states optional (not required for mobile)
+
+
+Outside the device:
+
+
+No interaction allowed
+
+
+
+9. User Interface (Editor Side)
+Code Input
+
+
+A multiline code editor area
+
+
+Accepts full HTML documents
+
+
+No syntax validation required initially
+
+
+Device Selector
+
+
+Dropdown or selector for:
+
+
+iPhone 15 Pro Max (only option in Phase 1)
+
+
+
+
+Preview Action
+
+
+Auto-render on code change or
+
+
+Manual “Preview” button (either is acceptable)
+
+
+
+10. Layout Requirements
+
+
+Split layout:
+
+
+Left: Code editor
+
+
+Right: Device mockup preview
+
+
+
+
+Preview must remain visible while scrolling code
+
+
+Preview must scale responsively on desktop without breaking aspect ratio
+
+
+
+11. Performance Requirements
+
+
+Preview render time < 500ms for typical HTML prototypes
+
+
+No page reload when switching device
+
+
+Re-render only the sandboxed preview on code change
+
+
+
+12. Security Constraints
+
+
+No access to:
+
+
+Parent window
+
+
+Cookies
+
+
+LocalStorage outside sandbox
+
+
+
+
+No network restrictions in Phase 1 (external CSS/JS allowed)
+
+
+Prevent infinite loops from freezing the main UI (timeout or isolation recommended)
+
+
+
+13. Non-Goals (Explicitly Out of Scope)
+
+
+No backend APIs
+
+
+No authentication
+
+
+No collaboration
+
+
+No version history
+
+
+No export (PNG / video / share link)
+
+
+No mobile touch gesture simulation beyond basic scroll/click
+
+
+
+14. Acceptance Criteria
+The system is considered complete when:
+
+
+A user can paste HTML/CSS/JS.
+
+
+Selecting iPhone 15 Pro Max renders the content inside a realistic device mockup.
+
+
+The content scrolls only inside the device screen.
+
+
+CSS media queries respond correctly to device width.
+
+
+JavaScript interactions work normally.
+
+
+The preview feels comparable to Figma’s prototype preview—but for live code.
+
+
+
+15. Technical Flexibility
+
+
+Implementation language/framework is open
+
+
+Must be browser-based
+
+
+Must be extensible to add more devices later without refactoring core architecture
+
+
+
+That’s it.
+No fluff. No opinions. No roadmap theater.
+If you want:
+
+
+A second version rewritten as a single AI prompt
+
+
+A technical architecture breakdown
+
+
+A build order checklist (Day 1 → MVP)
+
+
+Say the word.
