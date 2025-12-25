@@ -1,7 +1,4 @@
-import { db } from "./db";
-import { eq } from "drizzle-orm";
 import {
-  prototypes,
   type Prototype,
   type InsertPrototype
 } from "@shared/schema";
@@ -12,20 +9,35 @@ export interface IStorage {
   createPrototype(prototype: InsertPrototype): Promise<Prototype>;
 }
 
-export class DatabaseStorage implements IStorage {
+export class MemStorage implements IStorage {
+  private prototypes: Map<number, Prototype>;
+  private currentId: number;
+
+  constructor() {
+    this.prototypes = new Map();
+    this.currentId = 1;
+  }
+
   async getPrototypes(): Promise<Prototype[]> {
-    return await db.select().from(prototypes);
+    return Array.from(this.prototypes.values());
   }
 
   async getPrototype(id: number): Promise<Prototype | undefined> {
-    const [prototype] = await db.select().from(prototypes).where(eq(prototypes.id, id));
-    return prototype;
+    return this.prototypes.get(id);
   }
 
   async createPrototype(insertPrototype: InsertPrototype): Promise<Prototype> {
-    const [prototype] = await db.insert(prototypes).values(insertPrototype).returning();
+    const id = this.currentId++;
+    const prototype: Prototype = {
+      ...insertPrototype,
+      id,
+      createdAt: new Date(),
+      name: insertPrototype.name ?? "Untitled Prototype",
+      device: insertPrototype.device ?? "iphone-15-pro-max",
+    };
+    this.prototypes.set(id, prototype);
     return prototype;
   }
 }
 
-export const storage = new DatabaseStorage();
+export const storage = new MemStorage();

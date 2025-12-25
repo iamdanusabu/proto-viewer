@@ -1,10 +1,12 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 import Editor from "@monaco-editor/react";
 import { DeviceFrame } from "@/components/DeviceFrame";
 import { Header } from "@/components/Header";
 import { useCreatePrototype } from "@/hooks/use-prototypes";
 import { useToast } from "@/hooks/use-toast";
+import { ArrowLeft, Maximize2, Minimize2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 const DEFAULT_CODE = `<!DOCTYPE html>
 <html>
@@ -59,6 +61,9 @@ export default function EditorPage() {
   const [code, setCode] = useState(DEFAULT_CODE);
   const [debouncedCode, setDebouncedCode] = useState(DEFAULT_CODE);
   const [isUpdating, setIsUpdating] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [scale, setScale] = useState(1);
+  const containerRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   const createPrototype = useCreatePrototype();
 
@@ -68,9 +73,41 @@ export default function EditorPage() {
     const timer = setTimeout(() => {
       setDebouncedCode(code);
       setIsUpdating(false);
-    }, 800); // 800ms debounce
+    }, 800);
     return () => clearTimeout(timer);
   }, [code]);
+
+  // Auto-scale effect
+  useEffect(() => {
+    const calculateScale = () => {
+      if (!containerRef.current) return;
+      const { clientWidth, clientHeight } = containerRef.current;
+      const padding = 40; // 20px padding on each side
+
+      // Device frame dimensions (matches DeviceFrame.tsx)
+      const frameWidth = 400;
+      const frameHeight = 850;
+
+      const scaleX = (clientWidth - padding) / frameWidth;
+      const scaleY = (clientHeight - padding) / frameHeight;
+
+      // Use the smaller scale to fit both dimensions, capped at 1.1 for large screens
+      const newScale = Math.min(scaleX, scaleY, 1.1);
+      setScale(Math.max(0.3, newScale)); // Minimum scale 0.3
+    };
+
+    calculateScale();
+    window.addEventListener('resize', calculateScale);
+
+    // Also recalculate when switching fullscreen modes as container size changes
+    const observer = new ResizeObserver(calculateScale);
+    if (containerRef.current) observer.observe(containerRef.current);
+
+    return () => {
+      window.removeEventListener('resize', calculateScale);
+      observer.disconnect();
+    };
+  }, [isFullscreen]);
 
   const handleSave = () => {
     createPrototype.mutate(
@@ -100,58 +137,84 @@ export default function EditorPage() {
   const handleRun = () => {
     setDebouncedCode(code);
     setIsUpdating(false);
+    setIsFullscreen(true);
   };
 
   return (
     <div className="h-screen flex flex-col bg-background text-foreground overflow-hidden">
-      <Header 
-        onSave={handleSave} 
-        onRun={handleRun}
-        isSaving={createPrototype.isPending} 
-      />
+      {!isFullscreen && (
+        <Header
+          onSave={handleSave}
+          onRun={handleRun}
+          isSaving={createPrototype.isPending}
+        />
+      )}
+
+      {isFullscreen && (
+        <div className="absolute top-4 left-4 z-50 animate-in fade-in slide-in-from-top-2">
+          <Button
+            variant="secondary"
+            className="gap-2 shadow-lg backdrop-blur-md bg-white/10 hover:bg-white/20 text-white"
+            onClick={() => setIsFullscreen(false)}
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back to Editor
+          </Button>
+        </div>
+      )}
 
       <div className="flex-1 overflow-hidden relative">
         <ResizablePanelGroup direction="horizontal" className="h-full">
-          
-          {/* LEFT PANEL: CODE EDITOR */}
-          <ResizablePanel defaultSize={50} minSize={30}>
-            <div className="h-full relative bg-[#1e1e1e]">
-              <Editor
-                height="100%"
-                defaultLanguage="html"
-                theme="vs-dark"
-                value={code}
-                onChange={(value) => setCode(value || "")}
-                options={{
-                  minimap: { enabled: false },
-                  fontSize: 14,
-                  padding: { top: 24 },
-                  fontFamily: "'JetBrains Mono', monospace",
-                  fontLigatures: true,
-                  scrollBeyondLastLine: false,
-                  wordWrap: "on",
-                  automaticLayout: true,
-                }}
-              />
-              <div className="absolute bottom-4 right-4 text-xs text-muted-foreground/50 pointer-events-none font-mono">
-                {code.length} chars
-              </div>
-            </div>
-          </ResizablePanel>
 
-          <ResizableHandle className="w-1.5 bg-border hover:bg-primary/50 transition-colors" />
+          {/* LEFT PANEL: CODE EDITOR */}
+          {!isFullscreen && (
+            <>
+              <ResizablePanel defaultSize={50} minSize={30}>
+                <div className="h-full relative bg-[#1e1e1e]">
+                  <Editor
+                    height="100%"
+                    defaultLanguage="html"
+                    theme="vs-dark"
+                    value={code}
+                    onChange={(value) => setCode(value || "")}
+                    options={{
+                      minimap: { enabled: false },
+                      fontSize: 14,
+                      padding: { top: 24 },
+                      fontFamily: "'JetBrains Mono', monospace",
+                      fontLigatures: true,
+                      scrollBeyondLastLine: false,
+                      wordWrap: "on",
+                      automaticLayout: true,
+                    }}
+                  />
+                  <div className="absolute bottom-4 right-4 text-xs text-muted-foreground/50 pointer-events-none font-mono">
+                    {code.length} chars
+                  </div>
+                </div>
+              </ResizablePanel>
+
+              <ResizableHandle className="w-1.5 bg-border hover:bg-primary/50 transition-colors" />
+            </>
+          )}
 
           {/* RIGHT PANEL: DEVICE PREVIEW */}
-          <ResizablePanel defaultSize={50} minSize={30}>
-            <div className="h-full bg-[#0a0a0a] overflow-y-auto overflow-x-hidden relative flex items-center justify-center p-8 bg-[radial-gradient(#1a1a1a_1px,transparent_1px)] [background-size:16px_16px]">
-              <div className="scale-[0.85] lg:scale-[0.9] xl:scale-100 origin-center transition-transform duration-500">
-                <DeviceFrame 
-                  code={debouncedCode} 
+          <ResizablePanel defaultSize={isFullscreen ? 100 : 50} minSize={30}>
+            <div
+              ref={containerRef}
+              className="h-full bg-[#0a0a0a] overflow-hidden relative flex items-center justify-center bg-[radial-gradient(#1a1a1a_1px,transparent_1px)] [background-size:16px_16px]"
+            >
+              <div
+                style={{ transform: `scale(${scale})` }}
+                className="origin-center transition-all duration-300 ease-in-out"
+              >
+                <DeviceFrame
+                  code={debouncedCode}
                   isUpdating={isUpdating}
                 />
               </div>
-              
-              <div className="absolute bottom-6 text-center w-full text-muted-foreground text-xs font-mono">
+
+              <div className="absolute bottom-6 text-center w-full text-muted-foreground text-xs font-mono opacity-50">
                 iPhone 15 Pro Max • 430 × 932
               </div>
             </div>
